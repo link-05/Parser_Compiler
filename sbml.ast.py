@@ -1,3 +1,5 @@
+#Tokens and expression rules for evaluating expression
+
 import ply.lex as lex
 
 tokens = (
@@ -34,27 +36,24 @@ t_EQUALS = r'\=\='
 t_NOTEQUALS = r'\!\=' 
 t_GREATERTHAN = r'\>' 
 t_BOOLNEG = r'\~'
+t_LIST = r'\[\]'
 
 #These are the operations that are used for when special action code must be executed. 
 def t_EXP(t):
    pass
 def t_INTDIV(t):
    pass
-def t_INT(t):
+def t_NUMBERS(t):
    pass
-def t_REAL(t):
-    pass
 def t_BOOL(t):
    pass
 def t_MEMBERSHIP(t):
     pass
 def t_REAL(t):
     pass
-def t_LIST(t):
+def t_BOOLDISJUNCTION(t):
    pass
 def t_BOOLCONJUGATION(t):
-   pass
-def t_BOOLNEGATION(t):
    pass
 def t_INDEXAT(t):
    pass
