@@ -2,8 +2,6 @@
 # Propositional Logic Grammar
 
 # AST Nodes for Expression Evaluator 
-
-global_names = {}
    
 # Below Node definition is taken from the sample PLY Parsing Files
 class Node():
@@ -49,7 +47,7 @@ class Real(Node):
 	def __str__(self):
 		res = "\t" * self.parentCount() + f"Real({str(self.value)})"
 		return res
-    
+	
 class Boolean(Node):
 	def __init__(self, v):
 		super().__init__()
@@ -63,57 +61,58 @@ class Boolean(Node):
 		return res
 
 class String(Node):
-    def __init__(self, v):
-        super().__init__()
-        self.value = v
-    
-    def eval(self, n):
-        return self.value
-    
-    def __str__(self):
-        res = "\t" * self.parentCount() + f"String('{self.value}')"
-        return res
+	def __init__(self, v):
+		super().__init__()
+		self.value = v
+	
+	def eval(self, n):
+		return self.value
+	
+	def __str__(self):
+		res = "\t" * self.parentCount() + f"String('{self.value}')"
+		return res
 
 class List(Node):
-    def __init__(self, elements):
-        super().__init__()
-        # A list has a set of elements and each element needs to be processed for parents as well
-        self.elements = elements
-        for element in elements:
-            element.parent = self
-    
-    def eval(self, n):
-        #Evaluate expression for each element 
-        return [element.eval(n) for element in self.elements]
-    
-    def __str__(self):
-        res = "\t" * self.parentCount() + "List"
-        # Add every element in the list into the result.
-        for element in self.elements:
-            res += "\n" + str(element)
-        return res
-    
+	def __init__(self, elements):
+		super().__init__()
+		# A list has a set of elements and each element needs to be processed for parents as well
+		self.elements = elements
+		for element in elements:
+			element.parent = self
+	
+	def eval(self, n):
+		#Evaluate expression for each element 
+		return [element.eval(n) for element in self.elements]
+	
+	def __str__(self):
+		res = "\t" * self.parentCount() + "List"
+		# Add every element in the list into the result.
+		for element in self.elements:
+			res += "\n" + str(element)
+		return res
+	
 class Tuple(Node):
-    def __init__(self, elements):
-        super().__init__()
-        # A list has a set of elements and each element needs to be processed for parents as well
-        self.elements = elements
-        for element in elements:
-            element.parent = self
-    
-    def eval(self, n):
-        #Evaluate expression for each element 
-        return tuple(element.eval(n) for element in self.elements)
-    
-    def __str__(self):
-        res = "\t" * self.parentCount() + "Tuple"
-        # Add every element in the list into the result.
-        for element in self.elements:
-            res += "\n" + str(element)
-        return res
-    
+	def __init__(self, elements):
+		super().__init__()
+		# A list has a set of elements and each element needs to be processed for parents as well
+		self.elements = elements
+		for element in elements:
+			element.parent = self
+	
+	def eval(self, n):
+		#Evaluate expression for each element 
+		return tuple(element.eval(n) for element in self.elements)
+	
+	def __str__(self):
+		res = "\t" * self.parentCount() + "Tuple"
+		# Add every element in the list into the result.
+		for element in self.elements:
+			res += "\n" + str(element)
+		return res
+	
 # Majority of the operators are binary operations
 # Similar init, Variated eval, similar __str__
+# PLY documentation - combined rules
 
 class BinaryOp(Node):
 	def __init__(self, left, op, right):
@@ -135,56 +134,60 @@ class BinaryOp(Node):
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)):
 				return left_val ** right_val
 			else:
-                # Type Mismatches
-				print("SEMANTIC ERROR")
-        
+				# Type Mismatches
+				raise Exception
+		
 		# Multiplication Op Eval 
 		elif self.op == "*":
 			# Multiplication can be for int or real
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)):
 				return left_val * right_val
 			else: 
-				print("SEMANTIC ERROR")
-        
-    	# Division Op Eval
+				raise Exception
+		
+		# Division Op Eval
 		elif self.op == "/":
 			# Division can be for Integers or real
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)):
 				#DNE, Division by 0 is illegal.
 				if(right_val == 0):
-					print("SEMANTIC ERROR")
+					raise Exception
 				return float(left_val) / float(right_val)
 			else:
-				print("SEMANTIC ERROR")
-    
-    	# Integer Division Eval
+				raise Exception
+	
+		# Integer Division Eval
 		elif self.op == "div":
 			# Integer Division requires a and b to be integers.
-			if isinstance(left_val, (int)) and isinstance(right_val, (int)):
+			if isinstance(left_val, (int)) and isinstance(right_val, (int))\
+				and not isinstance(left_val, (bool)) and not isinstance(right_val, (bool)):
 				if(right_val == 0):
-					print("SEMANTIC ERROR")
+					raise Exception
 				else:
 					return left_val // right_val
 			else:
-				print("SEMANTIC ERROR")
-    
+				raise Exception
+	
 		# Modulus Op Eval
-		elif self.op == "%":
+		elif self.op == "mod":
 			# Modulus can be for Integers
 			if isinstance(left_val, (int)) and isinstance(right_val, (int)):
-				return left_val%right_val
+				return left_val % right_val
 			else:
-				print("SEMANTIC ERROR")
-    
+				raise Exception
+	
 		# Addition Op Eval
 		elif self.op == "+":
-		# Addition operator can be for Integers, real, strings, and lists
-			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-   			isinstance(left_val, (str)) and isinstance(right_val, (str)) or\
-          	isinstance(left_val, (list)) and isinstance(right_val, (list)):
+            # Case 1: Number addition (explicitly excluding booleans)
+			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) and \
+				not isinstance(left_val, bool) and not isinstance(right_val, bool):
+				return left_val + right_val
+			elif isinstance(left_val, str) and isinstance(right_val, str):
+				return left_val + right_val
+			elif isinstance(left_val, list) and isinstance(right_val, list):
 				return left_val + right_val
 			else:
-				print("SEMANTIC ERROR")
+				raise Exception
 
 		# Subtraction Op Eval
 		elif self.op == "-":
@@ -192,7 +195,7 @@ class BinaryOp(Node):
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)):
 				return left_val - right_val
 			else:
-				print("SEMANTIC ERROR")
+				raise Exception
 
 		# Membership Op Eval
 		elif self.op == "in":
@@ -200,7 +203,7 @@ class BinaryOp(Node):
 			if isinstance(right_val, (str, list)):
 				return left_val in right_val
 			else:
-				print("SEMANTIC ERROR")
+				raise Exception
 
 		# Cons Op Eval
 		elif self.op == "::":
@@ -209,69 +212,68 @@ class BinaryOp(Node):
 				# Left will be turned into a list object then use + to combine the two list object.
 				return [left_val] + right_val
 			else:
-				print("SEMANTIC ERROR")
-    
+				raise Exception
+	
 		# Boolean Conjunction (AND) Op Eval
 		elif self.op == "andalso":
 			# left and right must be Booleans
 			if isinstance(left_val, (bool)) and isinstance(right_val, (bool)):
 				return left_val and right_val
 			else:
-				print("SEMANTIC ERROR")
-    
-    	# Boolean Disjunction (OR) Op Eval
-		elif self.op == "andalso":
+				raise Exception
+	
+		# Boolean Disjunction (OR) Op Eval
+		elif self.op == "orelse":
 			# Left and Right must be Booleans
 			if isinstance(left_val, (bool)) and isinstance(right_val, (bool)):
 				return left_val or right_val
 			else:
-				print("SEMANTIC ERROR")
-    
+				raise Exception
+	
 		# Less Than Comparisons
 		elif self.op == "<":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-       			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val < right_val
 			else:
-				print("SEMANTIC ERROR")
-        
+				raise Exception
+		
 		# Less Than or equal Comparisons
 		elif self.op == "<=":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-       			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val <= right_val
 			else:
-				print("SEMANTIC ERROR")
-	    
+				raise Exception
+		
 		# Equal Comparisons
 		elif self.op == "==":
-			# int, real or strings 
-			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-       			isinstance(left_val, (str)) and isinstance(right_val, (str)):
-				return left_val == right_val
-			else:
-				print("SEMANTIC ERROR")
-        
+			# int, real, list/tuple or strings 
+			return left_val == right_val
+
+		elif self.op == '<>':
+			return left_val != right_val
+
 		# Greater Than Comparisons
 		elif self.op == ">":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-       			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val > right_val
 			else:
-				print("SEMANTIC ERROR")
-        
+				raise Exception
+		
 		# Greater Than or equal Comparisons
 		elif self.op == ">=":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-       			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val >= right_val
 			else:
-				print("SEMANTIC ERROR")
-    
+				raise Exception
+	
 	def __str__(self):
 		res = "\t" * self.parentCount() + f"BinaryOp(op='{self.op}')"
 		res += "\n" + str(self.left)
@@ -279,79 +281,100 @@ class BinaryOp(Node):
 		return res
 
 
-class Negation(Node):
-	def __init__(self,child):
+class UnaryOp(Node):
+	def __init__(self, op, child):
 		super().__init__()
-		self.op = 'not'
+		self.op = op
 		self.child = child
 		self.child.parent = self
   
 	def eval(self, n):
 		child_val = self.child.eval(n)
+  
+		if self.op == '-':
+			return -1 * child_val
+
 		# the values have to be boolean
-		if isinstance(child_val, bool):
-			return not child_val
+		elif self.op == 'not':
+			if isinstance(child_val, bool):
+				return not child_val
+			else:
+				raise Exception
 		else:
-			print("SEMANTIC ERROR")
+			raise Exception
 
 	def __str__(self):
-		res = "\t" * self.parentCount() + f"Negation('{self.op}')"
+		res = "\t" * self.parentCount() + f"UnaryOp(op='{self.op}')"
 		res += "\n" + str(self.child)
 		return res
 	
 class IndexOp(Node):
 	def __init__(self, list, i_expr):
 		super().__init__()
-        # a is a list
+		# a is a list
 		self.list = list
-        # b is an expression that will be the index
+		# b is an expression that will be the index
 		self.i_expr = i_expr
 		self.list.parent = self
 		self.i_expr.parent = self
-        
+		
 	def eval(self, n):
 		list_val = self.list.eval(n)
 		expr_val = self.i_expr.eval(n)
+
 		if not isinstance(list_val, (str, list)):
-			print("SEMANTIC ERROR")
-		if not isinstance(expr_val, (str, list)):
-			print("SEMANTIC ERROR")
-		# Try block to avoid errors crashing program when indexing non-existent value.
+			raise TypeError("Target for indexing [] must be a list or string")
+            
+        # FIX: The index must be an integer, but NOT a boolean
+		if not isinstance(expr_val, int) or isinstance(expr_val, bool):
+			raise TypeError("Index must be an integer")
+            
 		try:
-			return list[expr_val]
+			return list_val[expr_val]
 		except IndexError:
-			print("SEMANTIC ERROR")
+			raise IndexError("Index out of bounds")
    
 	def __str__(self):
-		res = "\t" * self.parentCount + "IndexOp"
+		res = "\t" * self.parentCount() + "IndexOp"
 		res += "\n" + str(self.list)
 		res += "\n" + str(self.i_expr)
 		return res
 
 class TupleIndexOp(Node):
-    def __init__(self, i_index, tuple_expr):
+	def __init__(self, i_index, tuple_expr):
+		super().__init__()
+		self.i_index = i_index 
+		self.expr = tuple_expr # This is a node
+		self.expr.parent = self
+
+	def eval(self, n):
+		tuple_val = self.expr.eval(n)
+		
+		if not isinstance(tuple_val, tuple):
+			raise Exception
+		
+		# Implementation note was sml starts at index 1 and not 0
+		py_index = self.i_index - 1
+		
+		# Indexing needs a try catch to be safe.
+		try:
+			return tuple_val[py_index]
+		except IndexError:
+			raise Exception
+
+	def __str__(self):
+		res = "\t" * self.parentCount() + f"TupleIndexOp(index={self.i_index})"
+		res += "\n" + str(self.expr)
+		return res
+
+class ID(Node):
+    def __init__(self, name):
         super().__init__()
-        self.i_index = i_index 
-        self.expr = tuple_expr # This is a node
-        self.expr.parent = self
-
-    def eval(self, n):
-        tuple_val = self.expr.eval(n)
-        
-        if not isinstance(tuple_val, tuple):
-            print("SEMANTIC ERROR")
-            raise TypeError("Target of tuple indexing must be a tuple")
-        
-        # Implementation note was sml starts at index 1 and not 0
-        py_index = self.index_num - 1
-        
-        # Indexing needs a try catch to be safe.
-        try:
-            return tuple_val[py_index]
-        except IndexError:
-            print("SEMANTIC ERROR")
-
+        self.name = name
+    
+    def eval(self, names):
+        raise SyntaxError 
+    
     def __str__(self):
-        res = "\t" * self.parentCount() + f"TupleIndexOp(index={self.i_index})"
-        res += "\n" + str(self.expr)
+        res = "\t" * self.parentCount() + f"Variable('{self.name}')"
         return res
