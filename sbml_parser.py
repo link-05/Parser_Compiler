@@ -14,16 +14,20 @@ reserved_keywords = {
 	'in' : 'IN',
 	'not' : 'NOT',
 	'andalso' : 'ANDALSO',
-	'orelse' : 'ORELSE'
+	'orelse' : 'ORELSE',
+	'if' : 'IF',
+	'else' : 'ELSE',
+	'while' : 'WHILE',
+	'print' : 'PRINT'
 }
 
 # PLY DOC technique for reserved keyword token = [] + list()
-
+# Statements require addition of print, if, else, while, L/R braces, and semicolon.
 tokens = [
 	'INT', 'REAL', 'STRING', 'ID',
-	'LEFTPAREN', 'RIGHTPAREN', 'LEFTBRACKET', 'RIGHTBRACKET', 'COMMA',
-	'EXP', 'TIMES', 'DIVIDE', 'PLUS', 'MINUS', 'CONS', 'LESSTHAN', 'LESSTHANOREQUALS',
-	'EQUALS', 'NOTEQUALS', 'GREATERTHAN', 'GREATERTHANOREQUALS', 'TUPLEINDEX'
+	'LEFTPAREN', 'RIGHTPAREN', 'LEFTBRACKET', 'RIGHTBRACKET', 'LEFTBRACE', 'RIGHTBRACE', 'COMMA',
+	'SEMICOLON','EXP', 'TIMES', 'DIVIDE', 'PLUS', 'MINUS', 'CONS', 'LESSTHAN', 'LESSTHANOREQUALS',
+	'EQUALS', 'NOTEQUALS', 'GREATERTHAN', 'GREATERTHANOREQUALS', 'TUPLEINDEX', 'ASSIGN'
  ] + list(reserved_keywords.values())
 ''' All tokens are Integer, Real, Boolean, String, List, Left Parenthesis, Right Parenthesis
 Exponent, Times, Divide, Int Divide, Modulus, Plus, Minus, Cons, Membership, Boolean Conjugation,
@@ -51,6 +55,11 @@ def t_EQUALS(t):
 def t_NOTEQUALS(t):
 	r'<>'
 	return t
+
+def t_ASSIGN(t):
+	r'='
+	return t
+
 def t_LESSTHAN(t):
 	r'<'
 	return t
@@ -70,7 +79,10 @@ t_LEFTPAREN = r'\('
 t_RIGHTPAREN = r'\)'
 t_LEFTBRACKET = r'\['
 t_RIGHTBRACKET = r'\]'
+t_LEFTBRACE = r'\{'
+t_RIGHTBRACE = r'\}'
 t_COMMA = r'\,'
+t_SEMICOLON = r'\;'
 
 #These are the operations that are used for when special action code must be executed. 
 def t_ID(t):
@@ -131,6 +143,73 @@ precedence = (
 	('right', 'UMINUS') 
 )
 
+# Statement Rules
+# This is the initial block with the program codes
+def p_program(t):
+    'program : block'
+    t[0] = t[1]
+    
+# This is the code that is contained between two brackets
+def p_block(t):
+    'block : LEFTBRACE statement_list RIGHTBRACE'
+    t[0] = sbml_ast.Block(t[2])
+    
+# This stores a sequence of statements or the order it is done
+def p_statement_list(t):
+	'''statement_list : statement_list statement
+					  | empty'''
+	if t[1] is None:
+		t[0] = []
+	else:
+		t[0] = t[1] + [t[2]]
+
+# This is the type that will be stored in statement list,
+#   it can hold any of the statement token types. 
+def p_statement(t):
+    '''statement : assignment
+				 | print_statement
+     			 | if_statement
+         		 | while_statement
+              	 | block'''
+    t[0] = t[1]
+
+# Handles assignment
+def p_assignment(t):
+    'assignment : assignment_target ASSIGN expression SEMICOLON'
+    t[0] = sbml_ast.Assignment(t[1], t[3])
+
+# Handles differentiating the assignments between ID and Indexed 
+def p_assignment_target(t):
+    '''assignment_target : ID
+                         | ID LEFTBRACKET expression RIGHTBRACKET'''
+    if len(t) == 2:
+        t[0] = sbml_ast.ID(t[1])
+    else:
+        # Indexed assignment
+        t[0] = sbml_ast.IndexOp(sbml_ast.ID(t[1]), t[3])
+
+# Just a print
+def p_print_statement(t):
+    '''print_statement : PRINT LEFTPAREN expression RIGHTPAREN SEMICOLON'''
+    t[0] = sbml_ast.Print(t[3])
+
+# If statement,
+def p_if_statement(t):
+    '''if_statement : IF LEFTPAREN expression RIGHTPAREN block
+               | IF LEFTPAREN expression RIGHTPAREN block ELSE block'''
+    # size 6 is without while block. 
+    if len(t) == 6:
+        t[0] = sbml_ast.If(t[3], t[5])
+    else:
+        t[0] = sbml_ast.If(t[3], t[5], t[7])
+
+# While statement, 
+#   same logic as an else-less if, pass condition, pass block.
+def p_while_statement(t):
+    'while_statement : WHILE LEFTPAREN expression RIGHTPAREN block'
+    t[0] = sbml_ast.While(t[3], t[5])
+  
+  
 # PLY DOC combine grammar rule idea
 def p_expression_binaryop(t):
 	'''expression : expression EXP expression
@@ -186,7 +265,6 @@ def p_expression_index(t):
 	'expression : expression LEFTBRACKET expression RIGHTBRACKET'
 	# a[b]
 	t[0] = sbml_ast.IndexOp(t[1], t[3])
-
 
  
 def p_expression_int(t):

@@ -2,7 +2,7 @@
 # Propositional Logic Grammar
 
 # AST Nodes for Expression Evaluator 
-   
+	
 # Below Node definition is taken from the sample PLY Parsing Files
 class Node():
 	def __init__(self):
@@ -31,7 +31,7 @@ class Int(Node):
 
 	def eval(self, n):
 		return self.value
-   
+	
 	def __str__(self):
 		res = "\t" * self.parentCount() + f"Int({str(self.value)})" 
 		return res
@@ -127,7 +127,7 @@ class BinaryOp(Node):
 		left_val = self.left.eval(n)
 		right_val = self.right.eval(n)
 		# Operator check for what happens.
-  
+	
 		# Exponentiation Op Eval
 		if self.op == "**":
 			# Exponentiation operator can be for Integers or real
@@ -178,7 +178,7 @@ class BinaryOp(Node):
 	
 		# Addition Op Eval
 		elif self.op == "+":
-            # Case 1: Number addition (explicitly excluding booleans)
+			# Case 1: Number addition (explicitly excluding booleans)
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) and \
 				not isinstance(left_val, bool) and not isinstance(right_val, bool):
 				return left_val + right_val
@@ -234,7 +234,7 @@ class BinaryOp(Node):
 		elif self.op == "<":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+					isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val < right_val
 			else:
 				raise Exception
@@ -243,7 +243,7 @@ class BinaryOp(Node):
 		elif self.op == "<=":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+					isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val <= right_val
 			else:
 				raise Exception
@@ -260,7 +260,7 @@ class BinaryOp(Node):
 		elif self.op == ">":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+					isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val > right_val
 			else:
 				raise Exception
@@ -269,7 +269,7 @@ class BinaryOp(Node):
 		elif self.op == ">=":
 			# int, real or strings 
 			if isinstance(left_val, (int, float)) and isinstance(right_val, (int, float)) or\
-	   			isinstance(left_val, (str)) and isinstance(right_val, (str)):
+					isinstance(left_val, (str)) and isinstance(right_val, (str)):
 				return left_val >= right_val
 			else:
 				raise Exception
@@ -287,10 +287,10 @@ class UnaryOp(Node):
 		self.op = op
 		self.child = child
 		self.child.parent = self
-  
+	
 	def eval(self, n):
 		child_val = self.child.eval(n)
-  
+	
 		if self.op == '-':
 			return -1 * child_val
 
@@ -324,16 +324,16 @@ class IndexOp(Node):
 
 		if not isinstance(list_val, (str, list)):
 			raise TypeError("Target for indexing [] must be a list or string")
-            
-        # FIX: The index must be an integer, but NOT a boolean
+			
+		# FIX: The index must be an integer, but NOT a boolean
 		if not isinstance(expr_val, int) or isinstance(expr_val, bool):
 			raise TypeError("Index must be an integer")
-            
+			
 		try:
 			return list_val[expr_val]
 		except IndexError:
 			raise IndexError("Index out of bounds")
-   
+	
 	def __str__(self):
 		res = "\t" * self.parentCount() + "IndexOp"
 		res += "\n" + str(self.list)
@@ -368,13 +368,153 @@ class TupleIndexOp(Node):
 		return res
 
 class ID(Node):
-    def __init__(self, name):
-        super().__init__()
-        self.name = name
-    
-    def eval(self, names):
-        raise SyntaxError 
-    
-    def __str__(self):
-        res = "\t" * self.parentCount() + f"Variable('{self.name}')"
-        return res
+	def __init__(self, n):
+		super().__init__()
+		self.name = n
+	
+	def eval(self, n):
+		if self.name in n:
+			return n[self.name]
+		else:
+			raise Exception()	
+	def __str__(self):
+		res = "\t" * self.parentCount() + f"Variable('{self.name}')"
+		return res
+	
+#Statements
+	
+# Block Statement - Any expressions or statements enclosed by {}
+class Block(Node):
+	def __init__(self, statements):
+		super().__init__()
+		self.statements = statements
+		for statement in statements:
+			statement.parent = self
+	
+	def eval(self, n):
+		for statement in self.statements:
+			statement.eval(n)
+	
+	def __str__(self):
+		res = "\t" * self.parentCount() + "Block"
+		for statement in self.statements:
+			res += "\n" + str(statement)
+		return res
+
+# Assignment has two types here, simple variable assignment and list reassignment
+class Assignment(Node):
+	def __init__(self, target, value_expr):
+		super().__init__()
+		self.target = target # ID or IndexOP
+		self.value_expr = value_expr
+		self.target.parent = self
+		self.value_expr.parent = self
+	
+	def eval(self, n):
+		value = self.value_expr.eval(n)
+		# Assignment
+		if isinstance(self.target, ID):
+			n [self.target.name] = value
+		# Index Assignment for list
+		elif isinstance(self.target, IndexOp):
+			list_val = self.target.list.eval(n)
+			index_val = self.target.i_expr.eval(n)
+			# Indexing can only be with final outcome integer, 
+				#	if its a list or boolean, clearly wrong if otherwise.
+			if not isinstance(list_val, list):
+				raise Exception()
+			if isinstance(index_val, list) or isinstance(index_val, bool):
+				raise Exception()
+			# # allow negative index but not out of bound index.
+			# if abs(index_val) >= len(list.val):
+			# 	raise Exception()
+
+			# Do assignment once safe
+			list_val[index_val] = value
+		else:
+			raise Exception()
+	def __str__(self):
+		res = "\t" * self.parentCount() + "Assignment"
+		res += "\n" + str(self.target)
+		res += "\n" + str(self.value_expr)
+		return res
+
+# Print is just print
+class Print(Node):
+	def __init__(self, expr):
+		super().__init__()
+		self.expr = expr
+		self.expr.parent = self
+	def eval(self, n):
+		# Eval expression. Print expression.
+		value = self.expr.eval(n)
+		print(value)
+	def __str__(self):
+		res = "\t" * self.parentCount() + "Print"
+		res += "\n" + str(self.expr)
+		return res
+
+#If statement will be 3 parts:
+#	the condition part,
+#	the then part, and
+#	a boolean for 
+#		if there is an attached else statement.
+class If(Node):
+	def __init__(self, condition, then_block, else_block = None):
+		super().__init__()
+		self.condition = condition
+		self.then_block = then_block
+		self.else_block = else_block
+		self.condition.parent = self
+		self.then_block.parent = self
+		if else_block:
+			self.else_block.parent = self
+	def eval(self, n):
+		# Eval the condition expression
+		condition_val = self.condition.eval(n)
+		# res from condition must be t/f
+		if not isinstance(condition_val, bool):
+			raise Exception()
+		# If true, eval then block
+		if condition_val:
+			self.then_block.eval(n)
+		# If false, eval else block
+		elif self.else_block:
+			self.else_block.eval(n)
+
+	def __str__(self):
+		res = "\t" * self.parentCount() + "If"
+		res += "\n" + str(self.condition)
+		res += "\n" + str(self.then_block)
+		if self.else_block:
+			res += "\n" + str(self.else_block)
+		return res
+
+# While loop statement, will hold a condition and body block 
+class While(Node):
+	def __init__(self, condition, body):
+		self.condition = condition
+		self.body = body
+		self.condition.parent = self
+		self.body.parent = self
+	
+	def eval(self, n):
+		while True:
+			condition_val = self.condition.eval(n)
+			
+			# Condition must eval to a boolean
+			if not isinstance(condition_val, bool):
+				raise Exception()
+
+			# If false, break
+			if not condition_val:
+				break
+			
+			# If true, eval the body
+			self.body.eval(n)
+	
+	def __str__(self):
+		res = "\t" * self.parentCount() + "While"
+		res += "\n" + str(self.condition)
+		res += "\n" + str(self.body)
+		return res
