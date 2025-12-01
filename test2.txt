@@ -1,20 +1,17 @@
-1 + "abc"
-"abc" + ["c", "d", "e"]
-1 - [1, 2, 3]
-True andalso 5.0
-False orelse "Abc"
-not (3+7)
-[1, 2, 3, 4][5]
-#7(1, 2, 3)
-[1, 2, 3, 4][3 < 4]
-"abc" < [1, 2, 3]
-1 + 2;
-;
-1 2
-"a'
-'b
-[1, 2 3]
-[1, 2,
-#"a"(1, 2, 3)
-(2 + 3
-2 + 
+fun gcd(a, b) =
+{
+ t = b;
+ b = a mod b;
+ if (b == 0)
+ {
+ output = t;
+ }
+ else
+ {
+ output = gcd(t, b);
+ }
+}
+output;
+{
+ print(gcd(32, 18));
+}

@@ -518,3 +518,100 @@ class While(Node):
 		res += "\n" + str(self.condition)
 		res += "\n" + str(self.body)
 		return res
+class Program(Node):
+	# Program Node contains the functions and main code block
+	def __init__(self, functions, main):
+		super().__init__()
+		self.functions = functions
+		self.main = main
+		for fun in functions:
+			fun.parent = self
+		self.main.parent = self
+	
+	def eval(self, n):
+		# Need a table to store all function definitions
+		fun_table = {}
+		for fun_def in self.functions:
+			fun_table[fun_def.name] = fun_def
+			   
+		#Store into table n
+		n['__functions__'] = fun_table
+
+		#After functions are stored globally - allow the main block to execute
+		self.main.eval(n)
+
+	def __str__(self):
+		res = "\t" * self.parentCount() + "Program"
+		for fun in self.functions:
+			res += "\n" + str(fun)
+		res += "\n" + str(self.main)
+		return res
+
+class FunctionDef(Node):
+	# Function Defintion 
+	def __init__(self, name, params, body, ret_expr):
+		super().__init__()
+		self.name = name
+		self.params = params
+		self.body = body
+		self.ret_expr = ret_expr
+		self.body.parent = self
+		self.ret_expr.parent = self
+		
+	# This is only the definition/holder for all the requirements
+	def eval(self, n):
+		pass
+
+	def __str__(self):
+		res = "\t" * self.parentCount() + f"FunctionDef(name='{self.name}', params={self.params})"
+		res += "\n" + str(self.body)
+		res += "\n" + str(self.ret_expr)
+		return res
+	
+class FunctionCall(Node):
+	# Function call expression
+	def __init__(self, name, args):
+		super().__init__()
+		self.name = name
+		self.args = args
+		for arg in args:
+			arg.parent = self
+	def eval(self, n):
+		# Get table, check for function name, extract func def
+		if '__functions__' not in n:
+			raise Exception
+		# Use special naming to avoid overwriting when a function name called functions exist
+		fun_table = n['__functions__']
+
+		if self.name not in fun_table:
+			raise Exception
+		
+		func_def = fun_table[self.name]
+
+
+		arg_values = []
+		for arg in self.args:
+			arg_values.append(arg.eval(n))
+
+		if len(arg_values) != len(func_def.params):
+			raise Exception()
+		
+		# Need scope to prevent memory overwriting in n
+		#   when same func is called during recursion.
+		scope = {'__functions__': fun_table}
+
+		# Copy parameter (var to its value) for the local scope 
+		# zip pairs up element from separate lists returned as a list of pairs
+		for param_name, arg_value in zip(func_def.params, arg_values):
+			scope[param_name] = arg_value
+
+		# Run the function body
+		func_def.body.eval(scope)
+
+		return func_def.ret_expr.eval(scope)
+	
+	def __str__(self):
+		res = "\t" * self.parentCount() + f"FunctionCall(name= '{self.name}')"
+		for arg in self.args:
+			res += "\n" + str(arg)
+		return res

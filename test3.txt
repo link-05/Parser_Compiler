@@ -1,0 +1,45 @@
+{
+  s = "a man a plan a canal panama";
+  len_s = 27;
+  
+  s_nospace = "";
+  len_nospace = len_s;
+  i = 0;
+  while(i < len_s)
+  {
+    if(s[i] <> " ")
+    {
+      s_nospace = s_nospace + s[i];
+    }
+    else
+    {
+      len_nospace = len_nospace - 1;
+    }
+    i = i + 1;
+  }
+  print("NO_SPACE: " + s_nospace);
+  print("NO_SPACE_LENGTH:");
+  print(len_nospace);
+  
+  j = 0;
+  s_reverse = "";
+  while(j < len_nospace)
+  {
+    s_reverse = s_nospace[j] + s_reverse;
+    j = j + 1;
+  }
+  print("REVERSE: " + s_reverse);
+  
+  k = 0;
+  is_palindrome = True;
+  while(k < len_nospace)
+  {
+    if(s_nospace[k] <> s_reverse[k] andalso is_palindrome)
+    {
+      is_palindrome = False;
+    }
+    k = k + 1;
+  }
+  print("IS_PALINDROME:");
+  print(is_palindrome);
+}

@@ -18,7 +18,8 @@ reserved_keywords = {
 	'if' : 'IF',
 	'else' : 'ELSE',
 	'while' : 'WHILE',
-	'print' : 'PRINT'
+	'print' : 'PRINT',
+	'fun' : 'FUN'
 }
 
 # PLY DOC technique for reserved keyword token = [] + list()
@@ -146,9 +147,71 @@ precedence = (
 # Statement Rules
 # This is the initial block with the program codes
 def p_program(t):
-    'program : block'
-    t[0] = t[1]
+	'program : fun_list block'
+	t[0] = sbml_ast.Program(t[1], t[2])
     
+#Holds each function definition
+def p_fun_list(t):
+	'''fun_list : fun_list fun_def
+				| empty'''
+	if t[1] is None:
+		t[0] = []
+	else:
+		t[0] = t[1] + [t[2]]
+
+def p_fun_def(t):
+    'fun_def : FUN ID LEFTPAREN param_list RIGHTPAREN ASSIGN block expression SEMICOLON'
+    # 2 - ID, 4 - parameter, 7 - code block, 8 - 
+    t[0] = sbml_ast.FunctionDef(t[2], t[4], t[7], t[8])
+
+def p_param_list(t):
+	'''param_list : param_list_item
+				  | empty'''
+	if t[1] is None:
+		# no list
+		t[0] = []
+	else:
+		# pass list
+		t[0] = t[1]
+
+def p_param_list_item(t):
+	'''param_list_item : ID
+					   | param_list_item COMMA ID'''
+	if len(t) == 2:
+		# 1 item
+		# list = [id]
+		t[0] = [t[1]]
+	else:
+		# More than 1 item
+		# list = list + [id]
+		t[0] = t[1] + [t[3]]
+
+def p_expression_function_call(t):
+	'expression  :  ID LEFTPAREN arg_list RIGHTPAREN'
+	t[0] = sbml_ast.FunctionCall(t[1], t[3])
+
+def p_arg_list(t):
+	'''arg_list  : arg_list COMMA expression
+				 | expression
+				 | empty'''
+	if t[1] is None:
+		# empty
+		t[0] = []
+	elif len(t) == 2:
+		# 1 arg
+		t[0] = [t[1]]
+	else:
+		# multi arg
+		t[0] = t[1] + [t[3]]
+
+def p_arg_list_item(t):
+	'''arg_list_item : expression
+					 | arg_list_item COMMA expression'''
+	if len(t) == 2:
+		t[0] = [t[1]]
+	else: 
+		t[0] = t[1] + [t[3]]
+
 # This is the code that is contained between two brackets
 def p_block(t):
     'block : LEFTBRACE statement_list RIGHTBRACE'
