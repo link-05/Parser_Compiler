@@ -150,7 +150,7 @@ def p_program(t):
 	'program : fun_list block'
 	t[0] = sbml_ast.Program(t[1], t[2])
     
-#Holds each function definition
+# Holds all of the function definition at the start of the program running.
 def p_fun_list(t):
 	'''fun_list : fun_list fun_def
 				| empty'''
@@ -159,11 +159,18 @@ def p_fun_list(t):
 	else:
 		t[0] = t[1] + [t[2]]
 
+# Blueprint of the function definitions that will have the
+# 	1. Name of the function
+# 	2. the parameters of the the function
+# 	3. the code block that will be evaluated
+# 	4. the return statement of the function
 def p_fun_def(t):
     'fun_def : FUN ID LEFTPAREN param_list RIGHTPAREN ASSIGN block expression SEMICOLON'
     # 2 - ID, 4 - parameter, 7 - code block, 8 - 
     t[0] = sbml_ast.FunctionDef(t[2], t[4], t[7], t[8])
 
+# Case: empty or the end of the list. 
+# Parameters that the function takes in. 
 def p_param_list(t):
 	'''param_list : param_list_item
 				  | empty'''
@@ -174,6 +181,8 @@ def p_param_list(t):
 		# pass list
 		t[0] = t[1]
 
+# Case: Takes care non empty item in the list.
+# Parameters that the function takes in.
 def p_param_list_item(t):
 	'''param_list_item : ID
 					   | param_list_item COMMA ID'''
@@ -190,6 +199,8 @@ def p_expression_function_call(t):
 	'expression  :  ID LEFTPAREN arg_list RIGHTPAREN'
 	t[0] = sbml_ast.FunctionCall(t[1], t[3])
 
+# Case: empty or after arg_list_item finishes what it needs to do.
+# Argument - function call
 def p_arg_list(t):
 	'''arg_list  : arg_list COMMA expression
 				 | expression
@@ -204,6 +215,8 @@ def p_arg_list(t):
 		# multi arg
 		t[0] = t[1] + [t[3]]
 
+# Case: More than one item 
+# Argument - function call
 def p_arg_list_item(t):
 	'''arg_list_item : expression
 					 | arg_list_item COMMA expression'''
@@ -236,12 +249,14 @@ def p_statement(t):
               	 | block'''
     t[0] = t[1]
 
-# Handles assignment
+# The two assignments handles the different type of assignment between ID and Indexed 
+
+# Handles assignment specifically pertaining a variable that is not a list.
 def p_assignment(t):
     'assignment : assignment_target ASSIGN expression SEMICOLON'
     t[0] = sbml_ast.Assignment(t[1], t[3])
 
-# Handles differentiating the assignments between ID and Indexed 
+# This specifically to handle the indexed assignments 
 def p_assignment_target(t):
     '''assignment_target : ID
                          | ID LEFTBRACKET expression RIGHTBRACKET'''
@@ -251,12 +266,12 @@ def p_assignment_target(t):
         # Indexed assignment
         t[0] = sbml_ast.IndexOp(sbml_ast.ID(t[1]), t[3])
 
-# Just a print
+# Just a print, prints the expression that is passed into it
 def p_print_statement(t):
     '''print_statement : PRINT LEFTPAREN expression RIGHTPAREN SEMICOLON'''
     t[0] = sbml_ast.Print(t[3])
 
-# If statement,
+# If statement, also handles else statement. 
 def p_if_statement(t):
     '''if_statement : IF LEFTPAREN expression RIGHTPAREN block
                | IF LEFTPAREN expression RIGHTPAREN block ELSE block'''
@@ -379,11 +394,13 @@ def p_expression_tuple(p):
 	# at least 2 elements.
 	p[0] = sbml_ast.Tuple(p[2])
 
+# An expression with a comma and nothing trailing after that. 
 def p_expression_tuple_singleton(p):
 	'expression : LEFTPAREN expression COMMA RIGHTPAREN'
 	# 1 element
 	p[0] = sbml_ast.Tuple([p[2]])
 
+# For multi item list that have a comma 
 def p_element_list_comma(p):
 	'''element_list_comma : expression COMMA expression
                           | element_list_comma COMMA expression'''
